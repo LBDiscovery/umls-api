@@ -8,7 +8,7 @@ class UMLS:
         self._base_url = "https://uts-ws.nlm.nih.gov/rest"
         self._requests_per_second = requests_per_second
         self._counter = 0
-        self._reset_time = time.time() + 1.0
+        self._reset_time = time.time() + 1.0 #used to check time elapsed since first request and then reset after each 15(value of requests_per_second) requests
     
     def _wait_for_rate_limit(self):
         if(self._counter == self._requests_per_second):
