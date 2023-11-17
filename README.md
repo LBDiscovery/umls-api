@@ -2,7 +2,7 @@
 
 Class to interact with the UMLS API
 
-- Documentation will be added later, for now refer to the [APIs](https://documentation.uts.nlm.nih.gov/rest/home.html) documentation. Each endpoint mathces to a function in the class.
+- Documentation will be added later, for now refer to the [APIs](https://documentation.uts.nlm.nih.gov/rest/home.html) documentation. Each endpoint maps to a function in the class.
 
 ## Credits
 
