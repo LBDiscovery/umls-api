@@ -4,7 +4,7 @@ with open('README.md', 'r', encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-    name='umls-api',  
+    name='umlsapiconnector',  
     version='0.1',
     description='Class to interact with the UMLS API',
     long_description=long_description,
