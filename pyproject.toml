@@ -1,0 +1,25 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "umls_api_client"
+version = "0.0.3"
+authors = [
+  { name="Naveen Jayakody", email="naveenjayakody12@gmail.com" },
+]
+description = "Class to interact with the UMLS REST API"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "requests",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/Naveen-V-J/umls-api"
+"Bug Tracker" = "https://github.com/Naveen-V-J/umls-api/issues"
