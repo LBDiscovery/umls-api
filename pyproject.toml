@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "umls_api_client"
-version = "0.0.4"
+version = "0.0.5"
 authors = [
   { name="Naveen Jayakody", email="naveenjayakody12@gmail.com" },
 ]
@@ -13,6 +13,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
   "requests",
+  "ratelimit",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",

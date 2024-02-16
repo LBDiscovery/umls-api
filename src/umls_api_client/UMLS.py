@@ -1,93 +1,21 @@
-import json
 import requests
-import time
+from ratelimit import limits, sleep_and_retry
+from concurrent.futures import ThreadPoolExecutor
+
+REQ_PER_SEC=15
 
 class UMLS:
-    def __init__(self, api_key, requests_per_second=15):
+    
+
+    def __init__(self, api_key:str, requests_per_second:int=15):
         self._api_key = api_key
         self._base_url = "https://uts-ws.nlm.nih.gov/rest"
-        self._requests_per_second = requests_per_second
-        self._counter = 0
-        self._reset_time = time.time() + 1.0 #used to check time elapsed since first request and then reset after each 15(value of requests_per_second) requests
+        self._requests_per_second = requests_per_second 
+        self.REQ_PER_SEC=self._requests_per_second        
     
-    def _wait_for_rate_limit(self):
-        if(self._counter == self._requests_per_second):
-            #If time elapsed is within the second, ie the second is not over yet
-            current_time = time.time()
-            if(current_time < self._reset_time):
-                print('sleep')
-                time.sleep(self._reset_time - current_time)
-                print('up')
-            else:
-                self._counter = 0
-            self._reset_time = time.time() + 1
-        else:
-            self._counter += 1
-   
-    def retrieve_cuis(self, query, version='current',inputType='atom',includeObsolete=False,includeSuppressible=False,returnIdType='concept',sabs=[],
-                     searchType='words',partialSearch=False,pageNumber=1,pageSize=25):
-        search_endpoint = f"{self._base_url}/search/{version}"
-
-        params = {
-            "string": query,
-            "apiKey": self._api_key,
-            "inputType":inputType,
-            "searchType":searchType,
-            "pageNumber":pageNumber,
-            "pageSize":pageSize,
-            "returnIdType":returnIdType
-        }
-
-        if (includeObsolete):
-            params["includeObsolete"] = 'true'
-        else:
-            params["includeObsolete"] = 'false'
-
-        if (includeSuppressible):
-            params["includeSuppressible"] = 'true'
-        else:
-            params["includeSuppressible"] = 'false'
-
-        if (partialSearch):
-            params["partialSearch"] = 'true'
-        else:
-            params["partialSearch"] = 'false'
-        
-        if (len(sabs)==1):
-            params["sabs"] = sabs[0]
-        elif(len(sabs)>1):
-            sabsString = ','.join(sabs)
-            params["sabs"] = sabsString
-
-        headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        self._wait_for_rate_limit()
-        response = requests.get(search_endpoint, params=params,headers=headers)
-        data = response.json()
-
-        if response.status_code == 200:
-            return data
-        else:
-            raise Exception(f"Search failed. Status code: {response.status_code}")
-        
-    def retrieve_cui_info(self, cui, version='current'):
-        search_endpoint = f"{self._base_url}/content/{version}/CUI/{cui}"
-        params = {"apiKey":self._api_key}
-
-        headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        self._wait_for_rate_limit()
-        response = requests.get(search_endpoint, params=params,headers=headers)
-        data = response.json()
-
-        if response.status_code == 200:
-            return data
-        else:
-            raise Exception(f"Search failed. Status code: {response.status_code}")
-
-        
-    
-
-    def retrieve_cui_atoms(self, cui, version='current', preferred=False,includeObsolete=True,includeSuppressible=True,sabs=[],language='',ttys=[]
-                          ,pageNumber=1,pageSize=25):
+    @limits(calls=REQ_PER_SEC, period=1)
+    def retrieve_cui_atoms(self, cui:str, version:str='current', preferred:bool=False,includeObsolete:bool=True,includeSuppressible:bool=True,sabs:list[str]=[],language:str='',ttys:list[str]=[]
+                          ,pageNumber:int=1,pageSize:int=25):
         search_endpoint = f"{self._base_url}/content/{version}/CUI/{cui}/atoms"
         if preferred:
             search_endpoint += "/"+"preferred"
@@ -124,7 +52,6 @@ class UMLS:
 
 
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        self._wait_for_rate_limit()
         response = requests.get(search_endpoint, params=params,headers=headers)
         data = response.json()
 
@@ -134,8 +61,8 @@ class UMLS:
             raise Exception(f"Search failed. Status code: {response.status_code}")
         
 
-    
-    def retrieve_cui_definitions(self, cui, version='current',sabs=[], pageNumber=1, pageSize=25):
+    @limits(calls=REQ_PER_SEC, period=1)
+    def retrieve_cui_definitions(self, cui:str, version:str='current',sabs:list[str]=[], pageNumber:int=1, pageSize:int=25):
         search_endpoint = f"{self._base_url}/content/{version}/CUI/{cui}/definitions"
         
         params = {
@@ -152,7 +79,6 @@ class UMLS:
 
 
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        self._wait_for_rate_limit()
         response = requests.get(search_endpoint, params=params,headers=headers)
         data = response.json()
 
@@ -161,9 +87,9 @@ class UMLS:
         else:
             raise Exception(f"Search failed. Status code: {response.status_code}")
         
-
-    def retrieve_cui_relations(self, cui, version='current', includeRelationLabels=[],includeAdditionalRelationLabels=[],includeObsolete=False,includeSuppressible=False,sabs=[]
-                          ,pageNumber=1,pageSize=25):
+    @limits(calls=REQ_PER_SEC, period=1)
+    def retrieve_cui_relations(self, cui:str, version:str='current', includeRelationLabels:list[str]=[],includeAdditionalRelationLabels:list[str]=[],includeObsolete:bool=False,includeSuppressible:bool=False,sabs:list[str]=[]
+                          ,pageNumber:int=1,pageSize:int=25):
         search_endpoint = f"{self._base_url}/content/{version}/CUI/{cui}/relations"
         params = {
             "apiKey": self._api_key,
@@ -201,7 +127,6 @@ class UMLS:
 
 
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        self._wait_for_rate_limit()
         response = requests.get(search_endpoint, params=params,headers=headers)
         data = response.json()
 
@@ -210,15 +135,14 @@ class UMLS:
         else:
             raise Exception(f"Search failed. Status code: {response.status_code}")
         
-    
-    def retrieve_source_asserted_id_info(self,id,source,version='current'):
+    @limits(calls=REQ_PER_SEC, period=1)
+    def retrieve_source_asserted_id_info(self,id:str,source:str,version:str='current'):
         search_endpoint = f"{self._base_url}/content/{version}/source/{source}/{id}"
         params = {
             "apiKey": self._api_key,
         }
 
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        self._wait_for_rate_limit()
         response = requests.get(search_endpoint, params=params,headers=headers)
         data = response.json()
 
@@ -228,15 +152,14 @@ class UMLS:
             raise Exception(f"Search failed. Status code: {response.status_code}")
 
 
-    
-    def retrieve_source_asserted_id_atoms(self,id,source,version='current'):
+    @limits(calls=REQ_PER_SEC, period=1)
+    def retrieve_source_asserted_id_atoms(self,id:str,source:str,version:str='current'):
         search_endpoint = f"{self._base_url}/content/{version}/source/{source}/{id}/atoms"
         params = {
             "apiKey": self._api_key,
         }
 
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        self._wait_for_rate_limit()
         response = requests.get(search_endpoint, params=params,headers=headers)
         data = response.json()
 
@@ -245,8 +168,8 @@ class UMLS:
         else:
             raise Exception(f"Search failed. Status code: {response.status_code}")
     
-
-    def retrieve_source_asserted_id_parents(self,id,source,version='current',pageNumber=1,pageSize=25):
+    @limits(calls=REQ_PER_SEC, period=1)
+    def retrieve_source_asserted_id_parents(self,id:str,source:str,version:str='current',pageNumber:int=1,pageSize:int=25):
         search_endpoint = f"{self._base_url}/content/{version}/source/{source}/{id}/parents"
         params = {
             "apiKey": self._api_key,
@@ -255,7 +178,6 @@ class UMLS:
         }
 
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        self._wait_for_rate_limit()
         response = requests.get(search_endpoint, params=params,headers=headers)
         data = response.json()
 
@@ -264,7 +186,8 @@ class UMLS:
         else:
             raise Exception(f"Search failed. Status code: {response.status_code}")
     
-    def retrieve_source_asserted_id_children(self,id,source,version='current',pageNumber=1,pageSize=25):
+    @limits(calls=REQ_PER_SEC, period=1)
+    def retrieve_source_asserted_id_children(self,id:str,source:str,version:str='current',pageNumber:int=1,pageSize:int=25):
         search_endpoint = f"{self._base_url}/content/{version}/source/{source}/{id}/children"
         params = {
             "apiKey": self._api_key,
@@ -273,7 +196,6 @@ class UMLS:
         }
 
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        self._wait_for_rate_limit()
         response = requests.get(search_endpoint, params=params,headers=headers)
         data = response.json()
 
@@ -281,8 +203,9 @@ class UMLS:
             return data
         else:
             raise Exception(f"Search failed. Status code: {response.status_code}")
-        
-    def retrieve_source_asserted_id_ancestors(self,id,source,version='current',pageNumber=1,pageSize=25):
+
+    @limits(calls=REQ_PER_SEC, period=1)    
+    def retrieve_source_asserted_id_ancestors(self,id:str,source:str,version:str='current',pageNumber:int=1,pageSize:int=25):
         search_endpoint = f"{self._base_url}/content/{version}/source/{source}/{id}/ancestors"
         params = {
             "apiKey": self._api_key,
@@ -291,7 +214,6 @@ class UMLS:
         }
 
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        self._wait_for_rate_limit()
         response = requests.get(search_endpoint, params=params,headers=headers)
         data = response.json()
 
@@ -300,7 +222,8 @@ class UMLS:
         else:
             raise Exception(f"Search failed. Status code: {response.status_code}")
     
-    def retrieve_source_asserted_id_descendants(self,id,source,version='current',pageNumber=1,pageSize=25):
+    @limits(calls=REQ_PER_SEC, period=1)
+    def retrieve_source_asserted_id_descendants(self,id:str,source:str,version:str='current',pageNumber:int=1,pageSize:int=25):
         search_endpoint = f"{self._base_url}/content/{version}/source/{source}/{id}/descendants"
         params = {
             "apiKey": self._api_key,
@@ -309,7 +232,6 @@ class UMLS:
         }
 
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        self._wait_for_rate_limit()
         response = requests.get(search_endpoint, params=params,headers=headers)
         data = response.json()
 
@@ -318,9 +240,9 @@ class UMLS:
         else:
             raise Exception(f"Search failed. Status code: {response.status_code}")
         
-    
-    def retrieve_source_asserted_id_relations(self,id,source,version='current',pageNumber=1,pageSize=25,
-                                              includeRelationLabels=[],includeAdditionalRelationLabels=[],includeObsolete=False,includeSuppressible=False):
+    @limits(calls=REQ_PER_SEC, period=1)
+    def retrieve_source_asserted_id_relations(self,id:str,source:str,version:str='current',pageNumber:int=1,pageSize:int=25,
+                                              includeRelationLabels:list[str]=[],includeAdditionalRelationLabels:list[str]=[],includeObsolete:bool=False,includeSuppressible:bool=False):
         search_endpoint = f"{self._base_url}/content/{version}/source/{source}/{id}/relations"
         params = {
             "apiKey": self._api_key,
@@ -352,7 +274,6 @@ class UMLS:
 
 
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        self._wait_for_rate_limit()
         response = requests.get(search_endpoint, params=params,headers=headers)
         data = response.json()
 
@@ -361,8 +282,8 @@ class UMLS:
         else:
             raise Exception(f"Search failed. Status code: {response.status_code}")
         
-    
-    def retrieve_source_asserted_id_attributes(self,id,source,version='current',pageNumber=1,pageSize=25,includeAttributeNames=[]):
+    @limits(calls=REQ_PER_SEC, period=1)
+    def retrieve_source_asserted_id_attributes(self,id:str,source:str,version:str='current',pageNumber:int=1,pageSize:int=25,includeAttributeNames:list[str]=[]):
         search_endpoint = f"{self._base_url}/content/{version}/source/{source}/{id}/attributes"
         params = {
             "apiKey": self._api_key,
@@ -378,7 +299,6 @@ class UMLS:
         
       
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        self._wait_for_rate_limit()
         response = requests.get(search_endpoint, params=params,headers=headers)
         data = response.json()
 
@@ -387,7 +307,8 @@ class UMLS:
         else:
             raise Exception(f"Search failed. Status code: {response.status_code}")
     
-    def retrieve_tui_info(self,id,version='current'):
+    @limits(calls=REQ_PER_SEC, period=1)
+    def retrieve_tui_info(self,id:str,version:str='current'):
         search_endpoint = f"{self._base_url}/semantic-network/{version}/TUI/{id}"
         params = {
             "apiKey": self._api_key,
@@ -395,7 +316,6 @@ class UMLS:
             
       
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        self._wait_for_rate_limit()
         response = requests.get(search_endpoint, params=params,headers=headers)
         data = response.json()
 
@@ -404,8 +324,8 @@ class UMLS:
         else:
             raise Exception(f"Search failed. Status code: {response.status_code}")
     
-    
-    def crosswalk_vocabs_using_cuis(self,id,source,version='current',targetSource=[],includeObsolete=False,pageNumber=1,pageSize=25):
+    @limits(calls=REQ_PER_SEC, period=1)
+    def crosswalk_vocabs_using_cuis(self,id:str,source:str,version:str='current',targetSource:list[str]=[],includeObsolete:bool=False,pageNumber:int=1,pageSize:int=25):
         search_endpoint = f"{self._base_url}/crosswalk/{version}/source/{source}/{id}"
         params = {
             "apiKey": self._api_key,
@@ -425,7 +345,6 @@ class UMLS:
             params["includeObsolete"] = 'false'
       
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        self._wait_for_rate_limit()
         response = requests.get(search_endpoint, params=params,headers=headers)
         data = response.json()
 
@@ -433,21 +352,73 @@ class UMLS:
             return data
         else:
             raise Exception(f"Search failed. Status code: {response.status_code}")
+    
+    def retrieve_cuis(self, id_list:list[str], version:str='current',inputType:str='atom',includeObsolete:bool=False,includeSuppressible:bool=False,returnIdType:str='concept',sabs:list[str]=[],
+                     searchType:str='words',partialSearch:bool=False,pageNumber:int=1,pageSize:int=25):
+        search_endpoint = f"{self._base_url}/search/{version}"
 
+        params = {
+            "apiKey": self._api_key,
+            "inputType":inputType,
+            "searchType":searchType,
+            "pageNumber":pageNumber,
+            "pageSize":pageSize,
+            "returnIdType":returnIdType
+        }
 
-    #def retrieve_tui_for_id(self, id):
+        if (includeObsolete):
+            params["includeObsolete"] = 'true'
+        else:
+            params["includeObsolete"] = 'false'
 
+        if (includeSuppressible):
+            params["includeSuppressible"] = 'true'
+        else:
+            params["includeSuppressible"] = 'false'
+
+        if (partialSearch):
+            params["partialSearch"] = 'true'
+        else:
+            params["partialSearch"] = 'false'
+        
+        if (len(sabs)==1):
+            params["sabs"] = sabs[0]
+        elif(len(sabs)>1):
+            sabsString = ','.join(sabs)
+            params["sabs"] = sabsString
+
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        @sleep_and_retry
+        @limits(calls=self.REQ_PER_SEC, period=1)
+        def fetch_cui(id):
+            params["string"] = id
+            response = requests.get(search_endpoint, params=params,headers=headers)
+            response.raise_for_status()  # Raise an error for non-200 responses
+            return response.json()
+        
+        with ThreadPoolExecutor() as executor:
+            futures = {executor.submit(fetch_cui,id): id for id in id_list}
+            results = {id: future.result() for future, id in futures.items()}
+            ordered_results = [results[id] for id in id_list]
+        return ordered_results
     
 
-
-
-
+    def retrieve_cui_info(self, cui_list:list[str], version:str='current'):
         
+        params = {"apiKey":self._api_key}
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        @sleep_and_retry
+        @limits(calls=self.REQ_PER_SEC, period=1)
+        def fetch_cui_info(cui):
+            search_endpoint = f"{self._base_url}/content/{version}/CUI/{cui}"
+            response = requests.get(search_endpoint, params=params,headers=headers)
+            response.raise_for_status()  # Raise an error for non-200 responses
+            return response.json()
 
-
-
-
-   
-
-
-
+        with ThreadPoolExecutor() as executor:
+            futures = {executor.submit(fetch_cui_info,cui): cui for cui in cui_list}
+            results = {cui: future.result() for future, cui in futures.items()}
+            ordered_results = [results[cui] for cui in cui_list]
+        return ordered_results
+    
+        
