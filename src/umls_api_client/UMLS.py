@@ -7,7 +7,7 @@ REQ_PER_SEC=15
 class UMLS:
     
 
-    def __init__(self, api_key:str, requests_per_second:int=15):
+    def __init__(self, api_key:str, requests_per_second:int=20):
         self._api_key = api_key
         self._base_url = "https://uts-ws.nlm.nih.gov/rest"
         self._requests_per_second = requests_per_second 
@@ -390,17 +390,17 @@ class UMLS:
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
         @sleep_and_retry
         @limits(calls=self.REQ_PER_SEC, period=1)
-        def fetch_cui(id):
-            params["string"] = id
-            response = requests.get(search_endpoint, params=params,headers=headers)
+        def fetch_cui(id, params_local):
+            params_local["string"] = id
+            response = requests.get(search_endpoint, params=params_local,headers=headers)
             response.raise_for_status()  # Raise an error for non-200 responses
             return response.json()
         
         with ThreadPoolExecutor() as executor:
-            futures = {executor.submit(fetch_cui,id): id for id in id_list}
+            futures = {executor.submit(fetch_cui,id,params.copy()): id for id in id_list}
             results = {id: future.result() for future, id in futures.items()}
-            ordered_results = [results[id] for id in id_list]
-        return ordered_results
+            # ordered_results = [results[id] for id in id_list]
+        return results
     
 
     def retrieve_cui_info(self, cui_list:list[str], version:str='current'):
@@ -418,7 +418,7 @@ class UMLS:
         with ThreadPoolExecutor() as executor:
             futures = {executor.submit(fetch_cui_info,cui): cui for cui in cui_list}
             results = {cui: future.result() for future, cui in futures.items()}
-            ordered_results = [results[cui] for cui in cui_list]
-        return ordered_results
+            # ordered_results = [results[cui] for cui in cui_list]
+        return results
     
         
