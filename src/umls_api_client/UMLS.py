@@ -14,7 +14,7 @@ class UMLS:
         self.REQ_PER_SEC=self._requests_per_second        
     
 
-    def retrieve_cui_atoms(self, cui_list:list[str], version:str='current', preferred:bool=False,includeObsolete:bool=True,includeSuppressible:bool=True,sabs:list[str]=[],language:str='',ttys:list[str]=[]
+    def retrieve_cui_atoms(self, cui_list:list[str] | str, version:str='current', preferred:bool=False,includeObsolete:bool=True,includeSuppressible:bool=True,sabs:list[str]=[],language:str='',ttys:list[str]=[]
                           ,pageNumber:int=1,pageSize:int=25):
         params = {
             "apiKey": self._api_key,
@@ -61,6 +61,9 @@ class UMLS:
             response.raise_for_status()  # Raise an error for non-200 responses
             return response.json()
         
+        if isinstance(cui_list, str):
+            return fetch_cui_atom(cui_list)
+
         with ThreadPoolExecutor() as executor:
             futures = {executor.submit(fetch_cui_atom,cui): cui for cui in cui_list}
             results = {cui: future.result() for future, cui in futures.items()}
@@ -68,7 +71,7 @@ class UMLS:
         return results
         
 
-    def retrieve_cui_definitions(self, cui_list:list[str], version:str='current',sabs:list[str]=[], pageNumber:int=1, pageSize:int=25):
+    def retrieve_cui_definitions(self, cui_list:list[str] | str, version:str='current',sabs:list[str]=[], pageNumber:int=1, pageSize:int=25):
         
         params = {
             "apiKey": self._api_key,
@@ -93,13 +96,16 @@ class UMLS:
             response.raise_for_status()  # Raise an error for non-200 responses
             return response.json()
         
+        if isinstance(cui_list, str):
+            return fetch_cui_definition(cui_list)
+
         with ThreadPoolExecutor() as executor:
             futures = {executor.submit(fetch_cui_definition,cui): cui for cui in cui_list}
             results = {cui: future.result() for future, cui in futures.items()}
             # ordered_results = [results[id] for id in id_list]
         return results
         
-    def retrieve_cui_relations(self, cui_list:list[str], version:str='current', includeRelationLabels:list[str]=[],includeAdditionalRelationLabels:list[str]=[],includeObsolete:bool=False,includeSuppressible:bool=False,sabs:list[str]=[]
+    def retrieve_cui_relations(self, cui_list:list[str] | str, version:str='current', includeRelationLabels:list[str]=[],includeAdditionalRelationLabels:list[str]=[],includeObsolete:bool=False,includeSuppressible:bool=False,sabs:list[str]=[]
                           ,pageNumber:int=1,pageSize:int=25):
         
         params = {
@@ -147,13 +153,16 @@ class UMLS:
             response.raise_for_status()  # Raise an error for non-200 responses
             return response.json()
         
+        if isinstance(cui_list, str):
+            return fetch_cui_relations(cui_list)
+
         with ThreadPoolExecutor() as executor:
             futures = {executor.submit(fetch_cui_relations,cui): cui for cui in cui_list}
             results = {cui: future.result() for future, cui in futures.items()}
             # ordered_results = [results[id] for id in id_list]
         return results
         
-    def retrieve_source_asserted_id_info(self,id_list:list[str],source:str,version:str='current'):
+    def retrieve_source_asserted_id_info(self,id_list:list[str] | str,source:str,version:str='current'):
         params = {
             "apiKey": self._api_key,
         }
@@ -168,6 +177,9 @@ class UMLS:
             response.raise_for_status()  # Raise an error for non-200 responses
             return response.json()
         
+        if isinstance(id_list, str):
+            return fetch_source_asserted_id_info(id_list)
+
         with ThreadPoolExecutor() as executor:
             futures = {executor.submit(fetch_source_asserted_id_info,id): id for id in id_list}
             results = {id: future.result() for future, id in futures.items()}
@@ -175,7 +187,7 @@ class UMLS:
         return results
 
 
-    def retrieve_source_asserted_id_atoms(self,id_list:list[str],source:str,version:str='current'):
+    def retrieve_source_asserted_id_atoms(self,id_list:list[str] | str,source:str,version:str='current'):
         params = {
             "apiKey": self._api_key,
         }
@@ -185,19 +197,22 @@ class UMLS:
 
         @sleep_and_retry
         @limits(calls=self.REQ_PER_SEC, period=1)
-        def fetch_source_asserted_id_info(id):
+        def fetch_source_asserted_id_atoms(id):
             search_endpoint = f"{self._base_url}/content/{version}/source/{source}/{id}/atoms"
             response = requests.get(search_endpoint, params=params,headers=headers)
             response.raise_for_status()  # Raise an error for non-200 responses
             return response.json()
         
+        if isinstance(id_list, str):
+            return fetch_source_asserted_id_atoms(id_list)
+
         with ThreadPoolExecutor() as executor:
-            futures = {executor.submit(fetch_source_asserted_id_info,id): id for id in id_list}
+            futures = {executor.submit(fetch_source_asserted_id_atoms,id): id for id in id_list}
             results = {id: future.result() for future, id in futures.items()}
             # ordered_results = [results[id] for id in id_list]
         return results
     
-    def retrieve_source_asserted_id_parents(self,id_list:list[str],source:str,version:str='current',pageNumber:int=1,pageSize:int=25):
+    def retrieve_source_asserted_id_parents(self,id_list:list[str] | str,source:str,version:str='current',pageNumber:int=1,pageSize:int=25):
         params = {
             "apiKey": self._api_key,
             "pageNumber":pageNumber,
@@ -214,13 +229,16 @@ class UMLS:
             response.raise_for_status()  # Raise an error for non-200 responses
             return response.json()
         
+        if isinstance(id_list, str):
+            return fetch_source_asserted_id_parents(id_list)
+
         with ThreadPoolExecutor() as executor:
             futures = {executor.submit(fetch_source_asserted_id_parents,id): id for id in id_list}
             results = {id: future.result() for future, id in futures.items()}
             # ordered_results = [results[id] for id in id_list]
         return results
     
-    def retrieve_source_asserted_id_children(self,id_list:list[str],source:str,version:str='current',pageNumber:int=1,pageSize:int=25):
+    def retrieve_source_asserted_id_children(self,id_list:list[str] | str,source:str,version:str='current',pageNumber:int=1,pageSize:int=25):
         params = {
             "apiKey": self._api_key,
             "pageNumber":pageNumber,
@@ -236,14 +254,16 @@ class UMLS:
             response.raise_for_status()  # Raise an error for non-200 responses
             return response.json()
         
+        if isinstance(id_list, str):
+            return fetch_source_asserted_id_children(id_list)
+        
         with ThreadPoolExecutor() as executor:
             futures = {executor.submit(fetch_source_asserted_id_children,id): id for id in id_list}
             results = {id: future.result() for future, id in futures.items()}
             # ordered_results = [results[id] for id in id_list]
         return results
 
-    def retrieve_source_asserted_id_ancestors(self,id:str,source:str,version:str='current',pageNumber:int=1,pageSize:int=25):
-        search_endpoint = f"{self._base_url}/content/{version}/source/{source}/{id}/ancestors"
+    def retrieve_source_asserted_id_ancestors(self,id_list:list[str] | str,source:str,version:str='current',pageNumber:int=1,pageSize:int=25):
         params = {
             "apiKey": self._api_key,
             "pageNumber":pageNumber,
@@ -253,19 +273,22 @@ class UMLS:
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
         @sleep_and_retry
         @limits(calls=self.REQ_PER_SEC, period=1)
-        def fetch_source_asserted_id_ancesstors(id):
+        def fetch_source_asserted_id_ancestors(id):
             search_endpoint = f"{self._base_url}/content/{version}/source/{source}/{id}/ancestors"
             response = requests.get(search_endpoint, params=params,headers=headers)
             response.raise_for_status()  # Raise an error for non-200 responses
             return response.json()
         
+        if isinstance(id_list, str):
+            return fetch_source_asserted_id_ancestors(id_list)
+        
         with ThreadPoolExecutor() as executor:
-            futures = {executor.submit(fetch_source_asserted_id_ancesstors,id): id for id in id_list}
+            futures = {executor.submit(fetch_source_asserted_id_ancestors,id): id for id in id_list}
             results = {id: future.result() for future, id in futures.items()}
             # ordered_results = [results[id] for id in id_list]
         return results
     
-    def retrieve_source_asserted_id_descendants(self,id_list:list[str],source:str,version:str='current',pageNumber:int=1,pageSize:int=25):
+    def retrieve_source_asserted_id_descendants(self,id_list:list[str] | str,source:str,version:str='current',pageNumber:int=1,pageSize:int=25):
        
         params = {
             "apiKey": self._api_key,
@@ -283,13 +306,16 @@ class UMLS:
             response.raise_for_status()  # Raise an error for non-200 responses
             return response.json()
         
+        if isinstance(id_list, str):
+            return fetch_source_asserted_id_descendants(id_list)
+        
         with ThreadPoolExecutor() as executor:
             futures = {executor.submit(fetch_source_asserted_id_descendants,id): id for id in id_list}
             results = {id: future.result() for future, id in futures.items()}
             # ordered_results = [results[id] for id in id_list]
         return results
         
-    def retrieve_source_asserted_id_relations(self,id_list:list[str],source:str,version:str='current',pageNumber:int=1,pageSize:int=25,
+    def retrieve_source_asserted_id_relations(self,id_list:list[str] | str,source:str,version:str='current',pageNumber:int=1,pageSize:int=25,
                                               includeRelationLabels:list[str]=[],includeAdditionalRelationLabels:list[str]=[],includeObsolete:bool=False,includeSuppressible:bool=False):
         
         params = {
@@ -330,13 +356,16 @@ class UMLS:
             response.raise_for_status()  # Raise an error for non-200 responses
             return response.json()
         
+        if isinstance(id_list, str):
+            return fetch_source_asserted_id_relations(id_list)
+
         with ThreadPoolExecutor() as executor:
             futures = {executor.submit(fetch_source_asserted_id_relations,id): id for id in id_list}
             results = {id: future.result() for future, id in futures.items()}
             # ordered_results = [results[id] for id in id_list]
         return results
         
-    def retrieve_source_asserted_id_attributes(self,id_list:list[str],source:str,version:str='current',pageNumber:int=1,pageSize:int=25,includeAttributeNames:list[str]=[]):
+    def retrieve_source_asserted_id_attributes(self,id_list:list[str] | str,source:str,version:str='current',pageNumber:int=1,pageSize:int=25,includeAttributeNames:list[str]=[]):
         
         params = {
             "apiKey": self._api_key,
@@ -360,13 +389,16 @@ class UMLS:
             response.raise_for_status()  # Raise an error for non-200 responses
             return response.json()
         
+        if isinstance(id_list, str):
+            return fetch_source_asserted_id_attributes(id_list)
+
         with ThreadPoolExecutor() as executor:
             futures = {executor.submit(fetch_source_asserted_id_attributes,id): id for id in id_list}
             results = {id: future.result() for future, id in futures.items()}
             # ordered_results = [results[id] for id in id_list]
         return results
     
-    def retrieve_tui_info(self,tui_list:list[str],version:str='current'):
+    def retrieve_tui_info(self,tui_list:list[str] | str,version:str='current'):
         
         params = {
             "apiKey": self._api_key,
@@ -382,14 +414,16 @@ class UMLS:
             response.raise_for_status()  # Raise an error for non-200 responses
             return response.json()
         
+        if isinstance(tui_list, str):
+            return fetch_tui_info(tui_list)
+
         with ThreadPoolExecutor() as executor:
             futures = {executor.submit(fetch_tui_info,tui): tui for tui in tui_list}
             results = {tui: future.result() for future, tui in futures.items()}
             # ordered_results = [results[id] for id in id_list]
         return results
     
-    @limits(calls=REQ_PER_SEC, period=1)
-    def crosswalk_vocabs_using_cuis(self,cui_list:list[str],source:str,version:str='current',targetSource:list[str]=[],includeObsolete:bool=False,pageNumber:int=1,pageSize:int=25):
+    def crosswalk_vocabs_using_cuis(self,cui_list:list[str] | str,source:str,version:str='current',targetSource:list[str]=[],includeObsolete:bool=False,pageNumber:int=1,pageSize:int=25):
         
         params = {
             "apiKey": self._api_key,
@@ -409,7 +443,7 @@ class UMLS:
             params["includeObsolete"] = 'false'
       
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        
+
         @sleep_and_retry
         @limits(calls=self.REQ_PER_SEC, period=1)
         def fetch_crosswalk_vocabs_using_cui(cui):
@@ -418,13 +452,16 @@ class UMLS:
             response.raise_for_status()  # Raise an error for non-200 responses
             return response.json()
         
+        if isinstance(cui_list, str):
+            return fetch_crosswalk_vocabs_using_cui(cui_list)
+
         with ThreadPoolExecutor() as executor:
             futures = {executor.submit(fetch_crosswalk_vocabs_using_cui,cui): cui for cui in cui_list}
             results = {cui: future.result() for future, cui in futures.items()}
             # ordered_results = [results[id] for id in id_list]
         return results
     
-    def retrieve_cuis(self, id_list:list[str], version:str='current',inputType:str='atom',includeObsolete:bool=False,includeSuppressible:bool=False,returnIdType:str='concept',sabs:list[str]=[],
+    def retrieve_cuis(self, id_list:list[str] | str, version:str='current',inputType:str='atom',includeObsolete:bool=False,includeSuppressible:bool=False,returnIdType:str='concept',sabs:list[str]=[],
                      searchType:str='words',partialSearch:bool=False,pageNumber:int=1,pageSize:int=25):
         search_endpoint = f"{self._base_url}/search/{version}"
 
@@ -467,6 +504,9 @@ class UMLS:
             response.raise_for_status()  # Raise an error for non-200 responses
             return response.json()
         
+        if isinstance(id_list, str):
+            return fetch_cui(id_list,params.copy())
+
         with ThreadPoolExecutor() as executor:
             futures = {executor.submit(fetch_cui,id,params.copy()): id for id in id_list}
             results = {id: future.result() for future, id in futures.items()}
@@ -474,7 +514,7 @@ class UMLS:
         return results
     
 
-    def retrieve_cui_info(self, cui_list:list[str], version:str='current'):
+    def retrieve_cui_info(self, cui_list:list[str] | str, version:str='current'):
         
         params = {"apiKey":self._api_key}
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
@@ -485,6 +525,9 @@ class UMLS:
             response = requests.get(search_endpoint, params=params,headers=headers)
             response.raise_for_status()  # Raise an error for non-200 responses
             return response.json()
+
+        if isinstance(cui_list, str):
+            return fetch_cui_info(cui_list)
 
         with ThreadPoolExecutor() as executor:
             futures = {executor.submit(fetch_cui_info,cui): cui for cui in cui_list}
