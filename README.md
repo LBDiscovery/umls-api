@@ -14,9 +14,11 @@ pip install umls-api-client
 
 ```
 from umls_api_client import UMLS
-
 umls = UMLS.UMLS('ENTER YOUR UMLS API KEY')
-data = umls.retrieve_cuis(['D011247'],inputType='code')
+
+data = umls.retrieve_cuis(['D003160', 'D016430', 'D052061', 'D013487', 'D013485'],inputType='code')
+
+data2 = umls.retrieve_cuis('D003160',inputType='code')
 ```
 
 
